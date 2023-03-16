@@ -125,7 +125,7 @@ func addLike(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/album?id="+id, http.StatusSeeOther)
 }
 
-func listPopular(w http.ResponseWriter, r *http.Request)  {
+func listPopular(w http.ResponseWriter, r *http.Request) {
 	// Unless the request is using the GET method, return a 405 'Method
 	// Not Allowed' response.
 	if r.Method != http.MethodGet {
