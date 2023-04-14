@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "production_snippets",
+            "database": "production_snippets",
+            "username": "production_snippets",
+            "password": "486464"
+        }
+    ]
+}

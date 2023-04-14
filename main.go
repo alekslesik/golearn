@@ -1,81 +1,72 @@
 package main
 
 import (
-	"fmt"
-	"regexp"
-	"strconv"
+	"errors"
+	"log"
+	"net/http"
+
+	"github.com/alekslesik/golearn/internal/cookies"
 )
 
-type Stack interface {
-	push(string) error
-	pop() string
-	empty() bool
-}
-
-type stack struct {
-	base []brace
-}
-
-type brace struct {
-	symbol   string
-	position int
-}
-
-func (s *stack) push(value brace) error {
-	s.base = append(s.base, value)
-	return nil
-}
-
-func (s *stack) pop() brace {
-	n := len(s.base) - 1 // Верхний элемент
-	// fmt.Print(s[n])
-	elem := s.base[n]
-	// s.base[n] = "" // Удаляем элемент (записываем нулевое значение)
-	s.base = s.base[:n]
-	return elem
-}
-
-func (s *stack) empty() bool {
-	return len(s.base) == 0
-}
-
 func main() {
-	var input string
+	// Start a web server with the two endpoints.
+	mux := http.NewServeMux()
 
-	fmt.Scan(&input)
+	mux.HandleFunc("/set", setCookieHandler)
+	mux.HandleFunc("/get", getCookieHandler)
 
-	fmt.Println(isBalanced(input))
+	log.Println("Start server")
+
+	err := http.ListenAndServe(":3000", mux)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func isBalanced(str string) string {
-	var openBraces = stack{
-		base: make([]brace, 0),
+func setCookieHandler(w http.ResponseWriter, r *http.Request) {
+	// Initialize a new cookie containing the string "Hello world!" and some
+	// non-default attributes.
+	cookie := http.Cookie{
+		Name:     "exampleCookie",
+		Value:    "Hello Zoë!",
+		Path:     "/",
+		MaxAge:   3600,
+		HttpOnly: false,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
 	}
 
-	for k, v := range str {
-		v := string(v)
+	// Write the cookie. If there is an error (due to an encoding failure or it
+	// being too long) then log the error and send a 500 Internal Server Error
+	// response.
+	err := cookies.Write(w, cookie)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
 
-		if ok := regexp.MustCompile(`[(){}\[\]]`).Match([]byte(v)); !ok {
-			continue
+	// Write a HTTP response as normal.
+	w.Write([]byte("cookie setted"))
+}
+
+func getCookieHandler(w http.ResponseWriter, r *http.Request) {
+	// Use the Read() function to retrieve the cookie value, additionally
+	// checking for the ErrInvalidValue error and handling it as necessary.
+	value, err := cookies.Read(r, "exampleCookie")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			http.Error(w, "cookie not found", http.StatusBadRequest)
+		case errors.Is(err, cookies.ErrInvalidValue):
+			http.Error(w, "invalid cookie", http.StatusBadRequest)
+		default:
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
 		}
-
-		if v == "(" || v == "[" || v == "{" {
-			openBraces.push(brace{symbol: string(v), position: k + 1})
-		} else {
-			if openBraces.empty() {
-				return strconv.Itoa(k + 1)
-			}
-
-			openBrace := openBraces.pop()
-			if (openBrace.symbol == "[" && v != "]") || (openBrace.symbol == "(" && v != ")") || (openBrace.symbol == "{" && v != "}") {
-				return strconv.Itoa(k + 1)
-			}
-		}
+		return
 	}
 
-	if !openBraces.empty() {
-		return strconv.Itoa(openBraces.pop().position)
-	}
-
-	return "Success"
+	// Echo out the cookie value in the response body.
+	w.Write([]byte(value))
 }
