@@ -1,72 +1,91 @@
 package main
 
 import (
-	"errors"
-	"log"
-	"net/http"
-
-	"github.com/alekslesik/golearn/internal/cookies"
+	"fmt"
+	"time"
 )
 
-func main() {
-	// Start a web server with the two endpoints.
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/set", setCookieHandler)
-	mux.HandleFunc("/get", getCookieHandler)
-
-	log.Println("Start server")
-
-	err := http.ListenAndServe(":3000", mux)
-	if err != nil {
-		log.Fatal(err)
+func main()  {
+	sm := NewStateMachine(RedLight{})
+	for {
+		sm.Transition()
 	}
 }
 
-func setCookieHandler(w http.ResponseWriter, r *http.Request) {
-	// Initialize a new cookie containing the string "Hello world!" and some
-	// non-default attributes.
-	cookie := http.Cookie{
-		Name:     "exampleCookie",
-		Value:    "Hello Zoë!",
-		Path:     "/",
-		MaxAge:   3600,
-		HttpOnly: false,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	// Write the cookie. If there is an error (due to an encoding failure or it
-	// being too long) then log the error and send a 500 Internal Server Error
-	// response.
-	err := cookies.Write(w, cookie)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "server error", http.StatusInternalServerError)
-		return
-	}
-
-	// Write a HTTP response as normal.
-	w.Write([]byte("cookie setted"))
+// Define the methods that each state must implement.
+type State interface {
+	// when a state is entered
+	Enter()
+	// called when a state is exited
+	Exit()
+	// update the state machine
+	Update(l *StateMachine)
 }
 
-func getCookieHandler(w http.ResponseWriter, r *http.Request) {
-	// Use the Read() function to retrieve the cookie value, additionally
-	// checking for the ErrInvalidValue error and handling it as necessary.
-	value, err := cookies.Read(r, "exampleCookie")
-	if err != nil {
-		switch {
-		case errors.Is(err, http.ErrNoCookie):
-			http.Error(w, "cookie not found", http.StatusBadRequest)
-		case errors.Is(err, cookies.ErrInvalidValue):
-			http.Error(w, "invalid cookie", http.StatusBadRequest)
-		default:
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-		}
-		return
+// Represent the state machine to maintain the states and transitions between them.
+type StateMachine struct {
+	currentState State
+	states       map[string]State
+}
+
+// Factory creates a new StateMachine
+func NewStateMachine(initialState State) *StateMachine {
+	sm := &StateMachine{
+		currentState: initialState,
+		states:       make(map[string]State),
 	}
 
-	// Echo out the cookie value in the response body.
-	w.Write([]byte(value))
+	sm.currentState.Enter()
+	return sm
 }
+
+// Set initial state of the state machine
+func (sm *StateMachine) setState(s State) {
+	sm.currentState = s
+	sm.currentState.Enter()
+}
+
+// Update the state machine
+func (sm *StateMachine) Transition() {
+	sm.currentState.Update(sm)
+}
+
+type RedLight struct {}
+
+func (g RedLight) Enter() {
+	fmt.Println("Red light is on. Stop driving.")
+	time.Sleep(time.Second * 5)
+}
+
+func (g RedLight) Exit() {}
+
+func (g RedLight) Update(l *StateMachine) {
+	l.setState(&Greenligth{})
+}
+
+type Greenligth struct {}
+
+func (g Greenligth) Enter() {
+	fmt.Println("Green light is on. You can drive.")
+	time.Sleep(time.Second * 5)
+}
+
+func (g Greenligth) Exit() {}
+
+func (g Greenligth) Update(l *StateMachine) {
+	l.setState(&YellowLight{})
+}
+
+type YellowLight struct {}
+
+func (g YellowLight) Enter() {
+	fmt.Println("Yellow light is on. Prepare to stop.")
+	time.Sleep(time.Second * 5)
+}
+
+func (g YellowLight) Exit() {}
+
+func (g YellowLight) Update(l *StateMachine) {
+	l.setState(&RedLight{})
+}
+

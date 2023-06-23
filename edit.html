@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <h1>Редактирование: {{.Title}}</h1>
+    <form action="/save" method="POST">
+        <input type="text" name="title" value="{{.Title}}" placeholder="Заголовок" required><br>
+        <textarea name="body" rows="10" cols="50" placeholder="Текст" required>{{.Body}}</textarea><br>
+        <input type="submit" value="Сохранить">
+    </form>
+</body>
+</html>

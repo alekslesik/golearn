@@ -9,6 +9,34 @@
             "database": "production_snippets",
             "username": "production_snippets",
             "password": "486464"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "xprotocol"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "golearn",
+            "group": "golearn",
+            "database": "golearn",
+            "username": "golearn",
+            "password": "4864Kokos///",
+            "connectionTimeout": 15
         }
+    ],
+    "cSpell.words": [
+        "Eavesdown",
+        "Favourite",
+        "golearn",
+        "Greenligth",
+        "hexcolor",
+        "iscolor",
+        "joeybloggs",
+        "Kokos",
+        "Persphone",
+        "Reptersent",
+        "tmpl"
     ]
 }

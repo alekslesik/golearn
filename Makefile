@@ -1,3 +1,17 @@
+pwd = /root/go/src/github.com/alekslesik/golearn
+
+# Include variables from the .envrc file
+# include .envrc
+
+#=====================================#
+# DEVELOPMENT #
+#=====================================#
+
+## run: run the cmd/app application
+.PHONY: run
+run:
+	go run .
+
 #=====================================#
 # HELPERS #
 #=====================================#
@@ -8,43 +22,38 @@ help:
 	@echo 'Usage:'
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
-#=====================================#
-# DEVELOPMENT #
-#=====================================#
-
-## run/api: run the cmd/api application
-.PHONY: run
-run:
-	go run .
+.PHONY: confirm
+confirm:
+	@echo -n 'Are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
 
 #=====================================#
-# QUALITY CONTROL #
+# DOCKER #
 #=====================================#
 
-## audit: tidy dependencies and format, vet and test all code
+## docker-up: build and run docker container
+.PHONY: docker-up
+docker-up: 
+	docker build -t golearn .
+	# docker run -it --rm --name golearn golearn
 
-## go fmt ./... : command to format all .go files in the project directory, according to the Go standard.
-## go vet ./... : runs a variety of analyzers which carry out static analysis of your code and warn you
-## go test -race -vet=off ./... : command to run all tests in the project directory
-## staticcheck tool : to carry out some additional static analysis checks.
-.PHONY: audit
-audit: vendor
-	@echo 'Formatting code...'
-	go fmt ./...
-	@echo 'Vetting code...'
-	go vet ./...
-	# staticcheck ./...
-	@echo 'Running tests...'
-	go test -race -vet=off ./...
+## docker-build: compile, but not run your app inside the Docker instance
+.PHONY: docker-build
+docker-build:
+	docker run --rm -v $(pwd):$(pwd) -w $(pwd) golang:1.20 go build -v
+	./golear
 
-## go mod tidy : prune any unused dependencies from the go.mod and go.sum files, and add any missing dependencies
-## go mod verify : check that the dependencies on your computer (located in your module cache located at $GOPATH/pkg/mod)
-## haven’t been changed since they were downloaded and that they match the cryptographic hashes in your go.sum file
-## go mod vendor: copy the necessary source code from your module cache into a new vendor directory in your project root
-.PHONY: vendor
-vendor:
-	@echo 'Tidying and verifying module dependencies...'
-	go mod tidy
-	go mod verify
-	@echo 'Vendoring dependencies...'
-	go mod vendor
+## docker-run: compile, and execite make run command inside container
+.PHONY: docker-run
+docker-run:
+	docker container rm -f golearn
+	docker run -d --rm --name golearn -p 9999:9999 -v $(pwd):$(pwd) -w $(pwd) golang:1.20 make run
+
+## docker-restart: compile, and execite make run command inside container
+.PHONY: docker-restart
+docker-restart:
+	docker container restart golearn
+
+## docker-exec: compile, and execite make run command inside container
+.PHONY: docker-exec
+docker-exec:
+	docker container exec -it golearn make run
