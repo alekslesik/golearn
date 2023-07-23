@@ -3,6 +3,12 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
 )
 
 func main()  {
